@@ -1,8 +1,8 @@
 export const colors = {
   background: '#101114',
   surface: '#1A1D23',
-  primary: '#177A0D',
-  primaryPressed: '#126408',
+  primary: '#6B9A1F',
+  primaryPressed: '#547A18',
   onPrimary: '#FFFFFF',
   text: '#F7F3EA',
   mutedText: '#C8CDD7',

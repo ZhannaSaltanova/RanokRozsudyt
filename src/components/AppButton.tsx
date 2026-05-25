@@ -6,14 +6,26 @@ import {fonts} from '../theme/fonts';
 type AppButtonProps = {
   label: string;
   onPress: () => void;
+  disabled?: boolean;
 };
 
-export function AppButton({label, onPress}: AppButtonProps): React.JSX.Element {
+export function AppButton({
+  label,
+  onPress,
+  disabled = false,
+}: AppButtonProps): React.JSX.Element {
   return (
     <Pressable
       onPress={onPress}
-      style={({pressed}) => [styles.button, pressed && styles.buttonPressed]}>
-      <Text style={styles.text}>{label}</Text>
+      disabled={disabled}
+      style={({pressed}) => [
+        styles.button,
+        pressed && !disabled && styles.buttonPressed,
+        disabled && styles.buttonDisabled,
+      ]}>
+      <Text style={[styles.text, disabled && styles.textDisabled]}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -32,10 +44,18 @@ const styles = StyleSheet.create({
   buttonPressed: {
     backgroundColor: colors.primaryPressed,
   },
+  buttonDisabled: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
   text: {
     color: colors.onPrimary,
     fontFamily: fonts.primary,
     fontSize: 18,
     fontWeight: '700',
+  },
+  textDisabled: {
+    color: colors.subtleText,
   },
 });
