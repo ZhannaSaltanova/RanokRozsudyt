@@ -1,17 +1,16 @@
-import React, {useState} from 'react';
-import {BlockedContactsScreen} from './src/screens/BlockedContactsScreen';
-import {WelcomeScreen} from './src/screens/WelcomeScreen';
-
-type Screen = 'welcome' | 'blockedContacts';
+import {NavigationContainer} from '@react-navigation/native';
+import React from 'react';
+import {ContactsProvider} from './src/context/ContactsContext';
+import {AppNavigator} from './src/navigation/AppNavigator';
 
 function App(): React.JSX.Element {
-  const [screen, setScreen] = useState<Screen>('welcome');
-
-  if (screen === 'blockedContacts') {
-    return <BlockedContactsScreen onBack={() => setScreen('welcome')} />;
-  }
-
-  return <WelcomeScreen onStart={() => setScreen('blockedContacts')} />;
+  return (
+    <ContactsProvider>
+      <NavigationContainer>
+        <AppNavigator />
+      </NavigationContainer>
+    </ContactsProvider>
+  );
 }
 
 export default App;

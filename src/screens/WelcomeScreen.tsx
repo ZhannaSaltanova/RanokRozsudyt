@@ -1,17 +1,18 @@
+import {useNavigation} from '@react-navigation/native';
+import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
 import React from 'react';
 import {StatusBar, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {AppButton} from '../components/AppButton';
+import type {RootStackParamList} from '../navigation/AppNavigator';
 import {colors} from '../theme/colors';
 import {fonts} from '../theme/fonts';
 
-type WelcomeScreenProps = {
-  onStart: () => void;
-};
+type Nav = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
 
-export function WelcomeScreen({
-  onStart,
-}: WelcomeScreenProps): React.JSX.Element {
+export function WelcomeScreen(): React.JSX.Element {
+  const navigation = useNavigation<Nav>();
+
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
@@ -26,7 +27,10 @@ export function WelcomeScreen({
           </Text>
         </View>
 
-        <AppButton label="Почати" onPress={onStart} />
+        <AppButton
+          label="Почати"
+          onPress={() => navigation.replace('Home')}
+        />
       </View>
 
       <Text style={styles.footer}>
@@ -57,7 +61,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.primary,
     fontSize: 14,
     fontWeight: '700',
-    letterSpacing: 0,
     textTransform: 'uppercase',
   },
   title: {
@@ -65,7 +68,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.primary,
     fontSize: 40,
     fontWeight: '800',
-    letterSpacing: 0,
     lineHeight: 48,
     textAlign: 'center',
   },
@@ -87,4 +89,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
