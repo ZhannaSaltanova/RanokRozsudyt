@@ -17,6 +17,7 @@ import type {RootStackParamList} from '../navigation/AppNavigator';
 import {colors} from '../theme/colors';
 import {fonts} from '../theme/fonts';
 import {getTimeLeftLabel} from '../types/contact';
+import {formatPhoneDisplay} from '../utils/phoneUtils';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'BlockedContacts'>;
 
@@ -72,6 +73,11 @@ export function BlockedContactsScreen(): React.JSX.Element {
               </View>
               <View style={styles.cardContent}>
                 <Text style={styles.contactName}>{item.name}</Text>
+                {item.phone ? (
+                  <Text style={styles.contactPhone}>
+                    {formatPhoneDisplay(item.phone)}
+                  </Text>
+                ) : null}
                 <Text style={styles.reason}>{item.reason}</Text>
               </View>
               <View style={styles.cardRight}>
@@ -177,6 +183,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.primary,
     fontSize: 17,
     fontWeight: '700',
+  },
+  contactPhone: {
+    color: colors.subtleText,
+    fontFamily: fonts.primary,
+    fontSize: 12,
+    marginTop: 1,
   },
   reason: {
     marginTop: 3,

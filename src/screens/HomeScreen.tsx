@@ -1,9 +1,10 @@
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import React, {useState} from 'react';
+import React from 'react';
 import {Pressable, ScrollView, StatusBar, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {AppButton} from '../components/AppButton';
+import {useBlockedContacts} from '../context/ContactsContext';
 import {DailyPredictionCard} from '../components/DailyPredictionCard';
 import type {RootStackParamList} from '../navigation/AppNavigator';
 import {colors} from '../theme/colors';
@@ -14,7 +15,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 export function HomeScreen(): React.JSX.Element {
   const navigation = useNavigation<Nav>();
-  const [isProtectionOn, setIsProtectionOn] = useState(false);
+  const {isProtectionOn, setProtectionOn} = useBlockedContacts();
   const greeting = getGreeting();
 
   return (
@@ -37,7 +38,7 @@ export function HomeScreen(): React.JSX.Element {
             styles.protectionCard,
             isProtectionOn ? styles.protectionOn : styles.protectionOff,
           ]}
-          onPress={() => setIsProtectionOn(prev => !prev)}>
+          onPress={() => setProtectionOn(!isProtectionOn)}>
           <View style={styles.protectionText}>
             <Text style={styles.protectionLabel}>
               {isProtectionOn ? 'Захист увімкнено' : 'Захист вимкнено'}

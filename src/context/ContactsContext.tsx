@@ -11,12 +11,16 @@ import {
   BlockDuration,
   calcBlockedUntil,
 } from '../types/contact';
+import {normalizePhone} from '../utils/phoneUtils';
 
 const STORAGE_KEY = '@blocked_contacts';
+const PROTECTION_KEY = '@protection_on';
 
 type ContactsContextType = {
   contacts: BlockedContact[];
   isLoading: boolean;
+  isProtectionOn: boolean;
+  setProtectionOn: (value: boolean) => void;
   addContact: (params: {
     name: string;
     phone?: string;
@@ -46,20 +50,39 @@ export function ContactsProvider({
 }): React.JSX.Element {
   const [contacts, setContacts] = useState<BlockedContact[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProtectionOn, setIsProtectionOn] = useState(false);
 
   // Завантаження при старті
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY)
-      .then(json => {
-        if (json) {
-          const parsed: BlockedContact[] = JSON.parse(json);
+    Promise.all([
+      AsyncStorage.getItem(STORAGE_KEY),
+      AsyncStorage.getItem(PROTECTION_KEY),
+    ]).then(([contactsJson, protectionJson]) => {
+      if (contactsJson) {
+        try {
+          const parsed: BlockedContact[] = JSON.parse(contactsJson);
           const active = parsed.filter(
             c => c.blockedUntil === null || c.blockedUntil > Date.now(),
           );
           setContacts(active);
+        } catch {
+          // Дані пошкоджені — починаємо з чистого списку
+          AsyncStorage.removeItem(STORAGE_KEY);
         }
-      })
-      .finally(() => setIsLoading(false));
+      }
+      if (protectionJson !== null) {
+        try {
+          setIsProtectionOn(JSON.parse(protectionJson));
+        } catch {
+          // Ігноруємо пошкоджений стан захисту
+        }
+      }
+    }).finally(() => setIsLoading(false));
+  }, []);
+
+  const setProtectionOn = useCallback((value: boolean) => {
+    setIsProtectionOn(value);
+    AsyncStorage.setItem(PROTECTION_KEY, JSON.stringify(value));
   }, []);
 
   const save = useCallback((updated: BlockedContact[]) => {
@@ -78,7 +101,7 @@ export function ContactsProvider({
       const newContact: BlockedContact = {
         id: Date.now().toString(),
         name: params.name,
-        phone: params.phone,
+        phone: params.phone ? normalizePhone(params.phone) : undefined,
         reason: params.reason,
         note: params.note,
         duration: params.duration,
@@ -119,7 +142,7 @@ export function ContactsProvider({
           return {
             ...c,
             name: params.name,
-            phone: params.phone,
+            phone: params.phone ? normalizePhone(params.phone) : undefined,
             reason: params.reason,
             note: params.note,
             duration: params.duration,
@@ -135,7 +158,7 @@ export function ContactsProvider({
 
   return (
     <ContactsContext.Provider
-      value={{contacts, isLoading, addContact, removeContact, updateContact}}>
+      value={{contacts, isLoading, isProtectionOn, setProtectionOn, addContact, removeContact, updateContact}}>
       {children}
     </ContactsContext.Provider>
   );

@@ -24,6 +24,7 @@ import {colors} from '../theme/colors';
 import {fonts} from '../theme/fonts';
 import {BlockDuration, DURATION_LABELS} from '../types/contact';
 import {useBlockedContacts} from '../context/ContactsContext';
+import {validatePhone} from '../utils/phoneUtils';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddContact'>;
 type Route = RouteProp<RootStackParamList, 'AddContact'>;
@@ -33,6 +34,9 @@ type PhoneContact = {
   displayName: string;
   phoneNumbers: {number: string}[];
 };
+
+// Модульний кеш — контакти завантажуються один раз за сесію
+let cachedContacts: PhoneContact[] | null = null;
 
 const DURATIONS: BlockDuration[] = ['morning', '3days', '7days', 'forever'];
 
@@ -58,16 +62,17 @@ export function AddContactScreen(): React.JSX.Element {
   const editInitialized = useRef(false);
 
   // Phone book picker state
-  const [phoneContacts, setPhoneContacts] = useState<PhoneContact[]>([]);
+  const [phoneContacts, setPhoneContacts] = useState<PhoneContact[]>(
+    cachedContacts ?? [],
+  );
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedContact, setSelectedContact] = useState<PhoneContact | null>(null);
-  const [permissionDenied, setPermissionDenied] = useState(false);
-  const [wantsPhonebook, setWantsPhonebook] = useState(false);
 
   // Form fields
   const [name, setName] = useState('');   // прізвисько
   const [phone, setPhone] = useState(''); // номер (тільки якщо нема в книзі)
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');   // крик душі
   const [duration, setDuration] = useState<BlockDuration>('morning');
@@ -81,63 +86,50 @@ export function AddContactScreen(): React.JSX.Element {
       setReason(editingContact.reason);
       setNote(editingContact.note ?? '');
       setDuration(editingContact.duration);
+      setPhoneError(null);
       setMode(editingContact.phone ? 'phonebook' : 'manual');
     }
   }, [editingContact]);
 
-  // Завантажуємо контакти у фоні одразу при відкритті екрану
-  useEffect(() => {
-    if (isEditing) {return;}
-    const preload = async () => {
-      setLoadingContacts(true);
-      try {
-        if (Platform.OS === 'android') {
-          const granted = await PermissionsAndroid.request(
-            PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
-          );
-          if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-            setPermissionDenied(true);
-            setLoadingContacts(false);
-            return;
-          }
-        }
-        const all = await Contacts.getAll();
-        const filtered = all
-          .filter(c => c.phoneNumbers.length > 0)
-          .map(c => ({
-            recordID: c.recordID,
-            displayName:
-              c.displayName || `${c.givenName} ${c.familyName}`.trim(),
-            phoneNumbers: c.phoneNumbers,
-          }))
-          .sort((a, b) => a.displayName.localeCompare(b.displayName, 'uk'));
-        setPhoneContacts(filtered);
-      } finally {
-        setLoadingContacts(false);
-      }
-    };
-    preload();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Автоматично переходимо до книги як тільки контакти завантажились
-  useEffect(() => {
-    if (wantsPhonebook && !loadingContacts && !permissionDenied) {
-      setMode('phonebook');
-      setWantsPhonebook(false);
-    }
-  }, [loadingContacts, wantsPhonebook, permissionDenied]);
-
-  const openPhonebook = () => {
-    if (permissionDenied) {
-      setMode('manual');
+  const loadPhoneContacts = async () => {
+    // Кеш є — миттєво
+    if (cachedContacts) {
+      setPhoneContacts(cachedContacts);
       return;
     }
-    if (loadingContacts) {
-      setWantsPhonebook(true); // запам'ятовуємо намір, перейдемо як готово
-    } else {
-      setMode('phonebook');
+
+    setLoadingContacts(true);
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_CONTACTS,
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          setLoadingContacts(false);
+          return;
+        }
+      }
+      const all = await Contacts.getAll();
+      const filtered = all
+        .filter(c => c.phoneNumbers.length > 0)
+        .map(c => ({
+          recordID: c.recordID,
+          displayName:
+            c.displayName || `${c.givenName} ${c.familyName}`.trim(),
+          phoneNumbers: c.phoneNumbers,
+        }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, 'uk'));
+
+      cachedContacts = filtered; // зберігаємо в кеш
+      setPhoneContacts(filtered);
+    } finally {
+      setLoadingContacts(false);
     }
+  };
+
+  const openPhonebook = () => {
+    setMode('phonebook');
+    loadPhoneContacts();
   };
 
   const filteredContacts = phoneContacts.filter(c =>
@@ -150,18 +142,21 @@ export function AddContactScreen(): React.JSX.Element {
       ? !!editingContact?.phone
       : mode === 'phonebook' && !!selectedContact;
 
-  const canSave = isEditing
+  const canSave = (isEditing
     ? name.trim().length > 0
     : mode === 'phonebook'
     ? !!selectedContact
-    : name.trim().length > 0;
+    : name.trim().length > 0) && !phoneError;
 
   const handleSave = () => {
-    console.log('handleSave called', {canSave, mode, selectedContact: selectedContact?.displayName, name, isEditing});
-    if (!canSave) {
-      console.log('canSave is false, returning');
+    // Фінальна перевірка номера перед збереженням
+    const error = validatePhone(phone);
+    if (error) {
+      setPhoneError(error);
       return;
     }
+
+    if (!canSave) {return;}
 
     const finalName =
       name.trim() ||
@@ -169,11 +164,7 @@ export function AddContactScreen(): React.JSX.Element {
       editingContact?.name ||
       '';
 
-    console.log('finalName:', finalName);
-    if (!finalName) {
-      console.log('finalName is empty, returning');
-      return;
-    }
+    if (!finalName) {return;}
 
     if (isEditing && editingContact) {
       updateContact(editingContact.id, {
@@ -211,17 +202,8 @@ export function AddContactScreen(): React.JSX.Element {
         <View style={styles.chooseCards}>
           <Pressable style={styles.chooseCard} onPress={openPhonebook}>
             <Text style={styles.chooseIcon}>📱</Text>
-            <View style={styles.chooseLabelRow}>
-              <Text style={styles.chooseLabel}>З телефонної книги</Text>
-              {loadingContacts && (
-                <ActivityIndicator size="small" color={colors.primary} />
-              )}
-            </View>
-            <Text style={styles.chooseSub}>
-              {loadingContacts
-                ? 'Завантажуємо контакти...'
-                : 'Вибрати з існуючих контактів'}
-            </Text>
+            <Text style={styles.chooseLabel}>З телефонної книги</Text>
+            <Text style={styles.chooseSub}>Вибрати з існуючих контактів</Text>
           </Pressable>
           <Pressable
             style={styles.chooseCard}
@@ -357,13 +339,20 @@ export function AddContactScreen(): React.JSX.Element {
           <View style={styles.section}>
             <Text style={styles.label}>Номер телефону</Text>
             <TextInput
-              style={styles.input}
-              placeholder="+380..."
+              style={[styles.input, phoneError ? styles.inputError : null]}
+              placeholder="0971234567"
               placeholderTextColor={colors.subtleText}
               value={phone}
-              onChangeText={setPhone}
+              onChangeText={text => {
+                setPhone(text);
+                setPhoneError(validatePhone(text));
+              }}
+              onBlur={() => setPhoneError(validatePhone(phone))}
               keyboardType="phone-pad"
             />
+            {phoneError ? (
+              <Text style={styles.errorText}>{phoneError}</Text>
+            ) : null}
           </View>
         )}
 
@@ -605,6 +594,15 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontFamily: fonts.primary,
     fontSize: 16,
+  },
+  inputError: {
+    borderColor: '#E05555',
+  },
+  errorText: {
+    color: '#E05555',
+    fontFamily: fonts.primary,
+    fontSize: 12,
+    marginTop: -4,
   },
   durationRow: {
     flexDirection: 'row',
