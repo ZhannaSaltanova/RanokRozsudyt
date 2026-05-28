@@ -1,4 +1,4 @@
-export type BlockDuration = 'morning' | '3days' | '7days' | 'forever';
+export type BlockDuration = 'morning' | '3days' | '7days' | 'forever' | 'custom';
 
 export type BlockedContact = {
   id: string;
@@ -7,6 +7,7 @@ export type BlockedContact = {
   reason: string;
   note?: string; // крик душі — необов'язково
   duration: BlockDuration;
+  customHours?: number; // тільки для duration === 'custom'
   blockedUntil: number | null; // timestamp або null = назавжди
   addedAt: number;
 };
@@ -16,9 +17,13 @@ export const DURATION_LABELS: Record<BlockDuration, string> = {
   '3days': '3 дні',
   '7days': '7 днів',
   forever: 'Назавжди',
+  custom: 'Свій варіант',
 };
 
-export function calcBlockedUntil(duration: BlockDuration): number | null {
+export function calcBlockedUntil(
+  duration: BlockDuration,
+  customHours?: number,
+): number | null {
   const now = new Date();
 
   if (duration === 'forever') {
@@ -35,8 +40,14 @@ export function calcBlockedUntil(duration: BlockDuration): number | null {
   if (duration === '3days') {
     return now.getTime() + 3 * 24 * 60 * 60 * 1000;
   }
-  // 7days
-  return now.getTime() + 7 * 24 * 60 * 60 * 1000;
+  if (duration === '7days') {
+    return now.getTime() + 7 * 24 * 60 * 60 * 1000;
+  }
+  // custom
+  if (duration === 'custom' && customHours && customHours > 0) {
+    return now.getTime() + customHours * 60 * 60 * 1000;
+  }
+  return now.getTime() + 24 * 60 * 60 * 1000; // fallback
 }
 
 export function getTimeLeftLabel(blockedUntil: number | null): string {
@@ -49,10 +60,9 @@ export function getTimeLeftLabel(blockedUntil: number | null): string {
     return 'Закінчилось';
   }
 
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const days = Math.floor(hours / 24);
-
-  if (days >= 1) {
+  const hours = Math.round(diff / (1000 * 60 * 60));
+  if (hours >= 48) {
+    const days = Math.round(hours / 24);
     return `${days} ${days === 1 ? 'день' : days < 5 ? 'дні' : 'днів'}`;
   }
   if (hours >= 1) {
