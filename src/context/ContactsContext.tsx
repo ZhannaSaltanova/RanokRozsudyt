@@ -16,29 +16,23 @@ import {normalizePhone} from '../utils/phoneUtils';
 const STORAGE_KEY = '@blocked_contacts';
 const PROTECTION_KEY = '@protection_on';
 
+type ContactParams = {
+  name: string;
+  phone?: string;
+  reason: string;
+  note?: string;
+  duration: BlockDuration;
+  customHours?: number;
+};
+
 type ContactsContextType = {
   contacts: BlockedContact[];
   isLoading: boolean;
   isProtectionOn: boolean;
   setProtectionOn: (value: boolean) => void;
-  addContact: (params: {
-    name: string;
-    phone?: string;
-    reason: string;
-    note?: string;
-    duration: BlockDuration;
-  }) => void;
+  addContact: (params: ContactParams) => void;
   removeContact: (id: string) => void;
-  updateContact: (
-    id: string,
-    params: {
-      name: string;
-      phone?: string;
-      reason: string;
-      note?: string;
-      duration: BlockDuration;
-    },
-  ) => void;
+  updateContact: (id: string, params: ContactParams) => void;
 };
 
 const ContactsContext = createContext<ContactsContextType | null>(null);
@@ -91,13 +85,7 @@ export function ContactsProvider({
   }, []);
 
   const addContact = useCallback(
-    (params: {
-      name: string;
-      phone?: string;
-      reason: string;
-      note?: string;
-      duration: BlockDuration;
-    }) => {
+    (params: ContactParams) => {
       const newContact: BlockedContact = {
         id: Date.now().toString(),
         name: params.name,
@@ -105,7 +93,8 @@ export function ContactsProvider({
         reason: params.reason,
         note: params.note,
         duration: params.duration,
-        blockedUntil: calcBlockedUntil(params.duration),
+        customHours: params.customHours,
+        blockedUntil: calcBlockedUntil(params.duration, params.customHours),
         addedAt: Date.now(),
       };
       setContacts(prev => {
@@ -126,16 +115,7 @@ export function ContactsProvider({
   }, []);
 
   const updateContact = useCallback(
-    (
-      id: string,
-      params: {
-        name: string;
-        phone?: string;
-        reason: string;
-        note?: string;
-        duration: BlockDuration;
-      },
-    ) => {
+    (id: string, params: ContactParams) => {
       setContacts(prev => {
         const updated = prev.map(c => {
           if (c.id !== id) {return c;}
@@ -146,7 +126,8 @@ export function ContactsProvider({
             reason: params.reason,
             note: params.note,
             duration: params.duration,
-            blockedUntil: calcBlockedUntil(params.duration),
+            customHours: params.customHours,
+            blockedUntil: calcBlockedUntil(params.duration, params.customHours),
           };
         });
         AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));

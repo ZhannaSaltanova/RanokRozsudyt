@@ -1,7 +1,7 @@
 import {useNavigation, useRoute} from '@react-navigation/native';
 import type {RouteProp} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,6 +14,7 @@ import {
   Text,
   TextInput,
   View,
+  type ScrollView as ScrollViewType,
 } from 'react-native';
 import Contacts from 'react-native-contacts';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -38,7 +39,7 @@ type PhoneContact = {
 // Модульний кеш — контакти завантажуються один раз за сесію
 let cachedContacts: PhoneContact[] | null = null;
 
-const DURATIONS: BlockDuration[] = ['morning', '3days', '7days', 'forever'];
+const DURATIONS: BlockDuration[] = ['morning', '3days', '7days', 'forever', 'custom'];
 
 const REASON_SUGGESTIONS = [
   'Краще зачекати до ранку',
@@ -76,6 +77,17 @@ export function AddContactScreen(): React.JSX.Element {
   const [reason, setReason] = useState('');
   const [note, setNote] = useState('');   // крик душі
   const [duration, setDuration] = useState<BlockDuration>('morning');
+  const [customValue, setCustomValue] = useState(''); // число для свого варіанту
+  const [customUnit, setCustomUnit] = useState<'hours' | 'days'>('hours');
+
+  const scrollRef = useRef<ScrollViewType>(null);
+  const durationSectionY = useRef(0);
+
+  const scrollToDuration = useCallback(() => {
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({y: durationSectionY.current - 16, animated: true});
+    }, 150);
+  }, []);
 
   // Заповнюємо поля при редагуванні — чекаємо поки contacts завантажиться
   useEffect(() => {
@@ -86,6 +98,16 @@ export function AddContactScreen(): React.JSX.Element {
       setReason(editingContact.reason);
       setNote(editingContact.note ?? '');
       setDuration(editingContact.duration);
+      if (editingContact.duration === 'custom' && editingContact.customHours) {
+        const h = editingContact.customHours;
+        if (h % 24 === 0) {
+          setCustomValue(String(h / 24));
+          setCustomUnit('days');
+        } else {
+          setCustomValue(String(h));
+          setCustomUnit('hours');
+        }
+      }
       setPhoneError(null);
       setMode(editingContact.phone ? 'phonebook' : 'manual');
     }
@@ -142,11 +164,25 @@ export function AddContactScreen(): React.JSX.Element {
       ? !!editingContact?.phone
       : mode === 'phonebook' && !!selectedContact;
 
-  const canSave = (isEditing
-    ? name.trim().length > 0
-    : mode === 'phonebook'
-    ? !!selectedContact
-    : name.trim().length > 0) && !phoneError;
+  const customHours =
+    duration === 'custom'
+      ? (customUnit === 'days'
+          ? parseInt(customValue, 10) * 24
+          : parseInt(customValue, 10))
+      : undefined;
+
+  const customValid =
+    duration !== 'custom' ||
+    (!!customValue.trim() && !isNaN(Number(customValue)) && Number(customValue) > 0);
+
+  const canSave =
+    (isEditing
+      ? name.trim().length > 0
+      : mode === 'phonebook'
+      ? !!selectedContact
+      : name.trim().length > 0) &&
+    !phoneError &&
+    customValid;
 
   const handleSave = () => {
     // Фінальна перевірка номера перед збереженням
@@ -173,6 +209,7 @@ export function AddContactScreen(): React.JSX.Element {
         reason: reason.trim() || editingContact.reason,
         note: note.trim() || undefined,
         duration,
+        customHours,
       });
     } else {
       addContact({
@@ -184,6 +221,7 @@ export function AddContactScreen(): React.JSX.Element {
         reason: reason.trim() || REASON_SUGGESTIONS[0],
         note: note.trim() || undefined,
         duration,
+        customHours,
       });
     }
     navigation.goBack();
@@ -269,6 +307,7 @@ export function AddContactScreen(): React.JSX.Element {
     <SafeAreaView style={styles.screen}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.formScroll}
         keyboardShouldPersistTaps="handled">
 
@@ -357,7 +396,11 @@ export function AddContactScreen(): React.JSX.Element {
         )}
 
         {/* Тривалість */}
-        <View style={styles.section}>
+        <View
+          style={styles.section}
+          onLayout={e => {
+            durationSectionY.current = e.nativeEvent.layout.y;
+          }}>
           <Text style={styles.label}>Заблокувати на</Text>
           <View style={styles.durationRow}>
             {DURATIONS.map(d => (
@@ -378,6 +421,52 @@ export function AddContactScreen(): React.JSX.Element {
               </Pressable>
             ))}
           </View>
+
+          {/* Свій варіант — інпут */}
+          {duration === 'custom' && (
+            <View style={styles.customRow}>
+              <TextInput
+                style={styles.customInput}
+                placeholder="Введи число"
+                placeholderTextColor={colors.subtleText}
+                value={customValue}
+                onChangeText={v => setCustomValue(v.replace(/[^0-9]/g, ''))}
+                keyboardType="number-pad"
+                maxLength={4}
+                onFocus={scrollToDuration}
+              />
+              <View style={styles.unitToggle}>
+                <Pressable
+                  style={[
+                    styles.unitBtn,
+                    customUnit === 'hours' && styles.unitBtnActive,
+                  ]}
+                  onPress={() => setCustomUnit('hours')}>
+                  <Text
+                    style={[
+                      styles.unitBtnText,
+                      customUnit === 'hours' && styles.unitBtnTextActive,
+                    ]}>
+                    год
+                  </Text>
+                </Pressable>
+                <Pressable
+                  style={[
+                    styles.unitBtn,
+                    customUnit === 'days' && styles.unitBtnActive,
+                  ]}
+                  onPress={() => setCustomUnit('days')}>
+                  <Text
+                    style={[
+                      styles.unitBtnText,
+                      customUnit === 'days' && styles.unitBtnTextActive,
+                    ]}>
+                    дні
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Причина */}
@@ -628,6 +717,48 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   durationChipTextActive: {
+    color: colors.onPrimary,
+  },
+  customRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 4,
+  },
+  customInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 13,
+    color: colors.text,
+    fontFamily: fonts.primary,
+    fontSize: 16,
+  },
+  unitToggle: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  unitBtn: {
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    backgroundColor: colors.surface,
+  },
+  unitBtnActive: {
+    backgroundColor: colors.primary,
+  },
+  unitBtnText: {
+    color: colors.mutedText,
+    fontFamily: fonts.primary,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  unitBtnTextActive: {
     color: colors.onPrimary,
   },
   suggestions: {
