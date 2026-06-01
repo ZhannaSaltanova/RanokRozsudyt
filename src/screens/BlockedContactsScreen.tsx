@@ -23,7 +23,7 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'BlockedContacts'>;
 
 export function BlockedContactsScreen(): React.JSX.Element {
   const navigation = useNavigation<Nav>();
-  const {contacts, isLoading, removeContact} = useBlockedContacts();
+  const {contacts, isLoading, removeContact, attempts} = useBlockedContacts();
 
   const confirmRemove = (id: string, name: string) => {
     Alert.alert(
@@ -64,40 +64,64 @@ export function BlockedContactsScreen(): React.JSX.Element {
           contentContainerStyle={styles.list}
           data={contacts}
           keyExtractor={item => item.id}
-          renderItem={({item}) => (
-            <View style={styles.card}>
-              <View style={styles.cardAvatar}>
-                <Text style={styles.cardAvatarText}>
-                  {item.name[0]?.toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.cardContent}>
-                <Text style={styles.contactName}>{item.name}</Text>
-                {item.phone ? (
-                  <Text style={styles.contactPhone}>
-                    {formatPhoneDisplay(item.phone)}
+          renderItem={({item}) => {
+            const attemptCount = attempts.filter(
+              a => a.contactId === item.id && a.timestamp > Date.now() - 86400000,
+            ).length;
+
+            const attemptsLabel =
+              attemptCount === 1
+                ? '1 спроба сьогодні'
+                : attemptCount < 5
+                ? `${attemptCount} спроби сьогодні`
+                : `${attemptCount} спроб сьогодні`;
+
+            return (
+              <View style={styles.card}>
+                <View style={styles.cardTop}>
+                  <View style={styles.cardAvatar}>
+                    <Text style={styles.cardAvatarText}>
+                      {item.name[0]?.toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.cardContent}>
+                    <Text style={styles.contactName}>{item.name}</Text>
+                    {item.phone ? (
+                      <Text style={styles.contactPhone}>
+                        {formatPhoneDisplay(item.phone)}
+                      </Text>
+                    ) : null}
+                    <Text style={styles.reason}>{item.reason}</Text>
+                  </View>
+                  <Text style={styles.badge}>
+                    {getTimeLeftLabel(item.blockedUntil)}
                   </Text>
-                ) : null}
-                <Text style={styles.reason}>{item.reason}</Text>
-              </View>
-              <View style={styles.cardRight}>
-                <Text style={styles.badge}>
-                  {getTimeLeftLabel(item.blockedUntil)}
-                </Text>
-                <View style={styles.cardActions}>
-                  <Pressable
-                    onPress={() => navigation.navigate('AddContact', {contactId: item.id})}>
-                    <Text style={styles.editBtnText}>Редагувати</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.removeBtn}
-                    onPress={() => confirmRemove(item.id, item.name)}>
-                    <Text style={styles.removeBtnText}>Видалити</Text>
-                  </Pressable>
+                </View>
+
+                <View style={styles.cardFooter}>
+                  {attemptCount > 0 ? (
+                    <Text style={styles.attemptsBadge}>{attemptsLabel}</Text>
+                  ) : (
+                    <View />
+                  )}
+                  <View style={styles.cardActions}>
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() =>
+                        navigation.navigate('AddContact', {contactId: item.id})
+                      }>
+                      <Text style={styles.editBtnText}>Редагувати</Text>
+                    </Pressable>
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() => confirmRemove(item.id, item.name)}>
+                      <Text style={styles.removeBtnText}>Видалити</Text>
+                    </Pressable>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
+            );
+          }}
         />
       )}
     </SafeAreaView>
@@ -150,15 +174,18 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 16,
     backgroundColor: colors.surface,
     paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingTop: 14,
+    paddingBottom: 10,
+  },
+  cardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
   },
   cardAvatar: {
     width: 44,
@@ -168,6 +195,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
+    marginTop: 2,
   },
   cardAvatarText: {
     color: colors.primary,
@@ -177,6 +205,7 @@ const styles = StyleSheet.create({
   },
   cardContent: {
     flex: 1,
+    gap: 2,
   },
   contactName: {
     color: colors.text,
@@ -187,20 +216,14 @@ const styles = StyleSheet.create({
   contactPhone: {
     color: colors.subtleText,
     fontFamily: fonts.primary,
-    fontSize: 12,
-    marginTop: 1,
+    fontSize: 13,
   },
   reason: {
-    marginTop: 3,
+    marginTop: 2,
     color: colors.mutedText,
     fontFamily: fonts.primary,
     fontSize: 13,
     lineHeight: 18,
-  },
-  cardRight: {
-    alignItems: 'flex-end',
-    gap: 8,
-    flexShrink: 0,
   },
   badge: {
     overflow: 'hidden',
@@ -212,25 +235,37 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     paddingHorizontal: 10,
     paddingVertical: 5,
+    flexShrink: 0,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  attemptsBadge: {
+    color: colors.subtleText,
+    fontFamily: fonts.primary,
+    fontSize: 12,
   },
   cardActions: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 16,
     alignItems: 'center',
   },
   editBtnText: {
     color: colors.primary,
     fontFamily: fonts.primary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-  },
-  removeBtn: {
-    padding: 4,
   },
   removeBtnText: {
     color: colors.subtleText,
     fontFamily: fonts.primary,
-    fontSize: 12,
+    fontSize: 13,
   },
   empty: {
     flex: 1,
