@@ -273,7 +273,7 @@ export function AddContactScreen(): React.JSX.Element {
         </View>
 
         {loadingContacts ? (
-          <ActivityIndicator color={colors.primary} style={{marginTop: 40}} />
+          <ActivityIndicator color={colors.primary} style={styles.loader} />
         ) : (
           <FlatList
             data={filteredContacts}
@@ -521,6 +521,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  loader: {
+    marginTop: 40,
   },
   header: {
     paddingHorizontal: 20,
