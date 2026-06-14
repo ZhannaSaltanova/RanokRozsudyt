@@ -64,9 +64,6 @@ export function HomeScreen(): React.JSX.Element {
     }
   }, [isProtectionOn, openUnlockTest]);
 
-  const handlePartyDeactivate = useCallback(() => {
-    openUnlockTest('party');
-  }, [openUnlockTest]);
 
   const handleUnlockConfirm = useCallback(() => {
     if (unlockTarget === 'protection') {setProtectionOn(false);}
