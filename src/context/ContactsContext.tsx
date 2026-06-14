@@ -6,6 +6,7 @@ import React, {
   useEffect,
   useState,
 } from 'react';
+import {BlockedContacts} from '../native/BlockedContacts';
 import {
   BlockedContact,
   BlockDuration,
@@ -26,7 +27,7 @@ const PARTY_MODE_KEY = '@party_mode';
 
 type ContactParams = {
   name: string;
-  phone?: string;
+  phones?: string[];
   reason: string;
   note?: string;
   duration: BlockDuration;
@@ -65,6 +66,24 @@ export function ContactsProvider({
   const isPartyModeActive =
     partyMode !== null && partyMode.activeUntil > Date.now();
 
+  // Sync to SharedPreferences whenever contacts or protection state changes
+  // so CallBlockerService can read them without going through React Native
+  useEffect(() => {
+    if (isLoading) {return;}
+    const entries = contacts
+      .filter(c => c.phones.length > 0)
+      .flatMap(c =>
+        c.phones.map(phone => ({
+          id: c.id,
+          name: c.name,
+          phone,
+          reason: c.reason,
+          note: c.note ?? '',
+        })),
+      );
+    BlockedContacts.syncBlockedList(entries, isProtectionOn);
+  }, [contacts, isProtectionOn, isLoading]);
+
   useEffect(() => {
     Promise.all([
       AsyncStorage.getItem(STORAGE_KEY),
@@ -74,8 +93,12 @@ export function ContactsProvider({
     ]).then(([contactsJson, protectionJson, attemptsJson, partyModeJson]) => {
       if (contactsJson) {
         try {
-          const parsed: BlockedContact[] = JSON.parse(contactsJson);
-          const active = parsed.filter(
+          const parsed = JSON.parse(contactsJson) as (BlockedContact & {phone?: string})[];
+          const migrated: BlockedContact[] = parsed.map(c => ({
+            ...c,
+            phones: c.phones ?? (c.phone ? [c.phone] : []),
+          }));
+          const active = migrated.filter(
             c => c.blockedUntil === null || c.blockedUntil > Date.now(),
           );
           setContacts(active);
@@ -114,7 +137,7 @@ export function ContactsProvider({
     const newContact: BlockedContact = {
       id: Date.now().toString(),
       name: params.name,
-      phone: params.phone ? normalizePhone(params.phone) : undefined,
+      phones: (params.phones ?? []).map(normalizePhone).filter(Boolean),
       reason: params.reason,
       note: params.note,
       duration: params.duration,
@@ -144,7 +167,7 @@ export function ContactsProvider({
         return {
           ...c,
           name: params.name,
-          phone: params.phone ? normalizePhone(params.phone) : undefined,
+          phones: (params.phones ?? c.phones ?? []).map(normalizePhone).filter(Boolean),
           reason: params.reason,
           note: params.note,
           duration: params.duration,
@@ -159,8 +182,9 @@ export function ContactsProvider({
 
   const logAttempt = useCallback((log: Omit<AttemptLog, 'id'>) => {
     const newLog: AttemptLog = {...log, id: Date.now().toString()};
+    const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
     setAttempts(prev => {
-      const updated = [newLog, ...prev];
+      const updated = [newLog, ...prev].filter(a => a.timestamp > cutoff);
       AsyncStorage.setItem(ATTEMPT_LOGS_KEY, JSON.stringify(updated));
       return updated;
     });

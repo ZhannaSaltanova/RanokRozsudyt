@@ -1,13 +1,18 @@
 import {useNavigation} from '@react-navigation/native';
 import type {NativeStackNavigationProp} from '@react-navigation/native-stack';
-import React from 'react';
+import React, {useCallback, useState} from 'react';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import {
-  Alert,
   FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
   Pressable,
   StatusBar,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -25,16 +30,44 @@ export function BlockedContactsScreen(): React.JSX.Element {
   const navigation = useNavigation<Nav>();
   const {contacts, isLoading, removeContact, attempts} = useBlockedContacts();
 
-  const confirmRemove = (id: string, name: string) => {
-    Alert.alert(
-      'Видалити контакт?',
-      `"${name}" більше не буде заблокований.`,
-      [
-        {text: 'Скасувати', style: 'cancel'},
-        {text: 'Видалити', style: 'destructive', onPress: () => removeContact(id)},
-      ],
-    );
-  };
+  type DeleteChallenge =
+    | {type: 'reverse'; display: string; answer: string}
+    | {type: 'math'; display: string; answer: number};
+
+  const [deleteTarget, setDeleteTarget] = useState<{id: string; name: string} | null>(null);
+  const [deleteChallenge, setDeleteChallenge] = useState<DeleteChallenge | null>(null);
+  const [deleteInput, setDeleteInput] = useState('');
+
+  const openDeleteTest = useCallback((id: string, name: string) => {
+    const phrases = ['ДОБРА НІЧ', 'НЕ ДЗВОНИ', 'ЧАС СПАТИ', 'СТОП ДУМАЙ', 'НОЧІ КІНЕЦЬ', 'ПАУЗА ЗАРАЗ'];
+    let challenge: DeleteChallenge;
+    if (Math.random() > 0.5) {
+      const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+      const answer = phrase.split(' ').map(w => w.split('').reverse().join('')).join(' ');
+      challenge = {type: 'reverse', display: phrase, answer};
+    } else {
+      let a: number, b: number, c: number, d: number;
+      do {
+        a = Math.floor(Math.random() * 6) + 4;
+        b = Math.floor(Math.random() * 6) + 4;
+        c = Math.floor(Math.random() * 5) + 2;
+        d = Math.floor(Math.random() * 5) + 2;
+      } while (a * b - c * d <= 5);
+      const useAdd = Math.random() > 0.6;
+      challenge = useAdd
+        ? {type: 'math', display: `${a} × ${b} + ${c} × ${d} = ?`, answer: a * b + c * d}
+        : {type: 'math', display: `${a} × ${b} − ${c} × ${d} = ?`, answer: a * b - c * d};
+    }
+    setDeleteChallenge(challenge);
+    setDeleteInput('');
+    setDeleteTarget({id, name});
+  }, []);
+
+  const isDeleteCorrect = deleteChallenge !== null && (
+    deleteChallenge.type === 'reverse'
+      ? deleteInput.trim().toUpperCase() === deleteChallenge.answer
+      : deleteInput.trim() !== '' && parseInt(deleteInput.trim(), 10) === deleteChallenge.answer
+  );
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -53,7 +86,7 @@ export function BlockedContactsScreen(): React.JSX.Element {
 
       {isLoading ? null : contacts.length === 0 ? (
         <View style={styles.empty}>
-          <Text style={styles.emptyIcon}>🛡️</Text>
+          <Ionicons name="shield-outline" size={56} color={colors.subtleText} style={styles.emptyIcon} />
           <Text style={styles.emptyTitle}>Список порожній</Text>
           <Text style={styles.emptySub}>
             Додай контакти, яким краще не писати після опівночі
@@ -77,7 +110,9 @@ export function BlockedContactsScreen(): React.JSX.Element {
                 : `${attemptCount} спроб сьогодні`;
 
             return (
-              <View style={styles.card}>
+              <Pressable
+                style={styles.card}
+                onPress={() => navigation.navigate('AddContact', {contactId: item.id})}>
                 <View style={styles.cardTop}>
                   <View style={styles.cardAvatar}>
                     <Text style={styles.cardAvatarText}>
@@ -86,12 +121,15 @@ export function BlockedContactsScreen(): React.JSX.Element {
                   </View>
                   <View style={styles.cardContent}>
                     <Text style={styles.contactName}>{item.name}</Text>
-                    {item.phone ? (
+                    {item.phones.length > 0 ? (
                       <Text style={styles.contactPhone}>
-                        {formatPhoneDisplay(item.phone)}
+                        {item.phones.map(formatPhoneDisplay).join(' · ')}
                       </Text>
                     ) : null}
                     <Text style={styles.reason}>{item.reason}</Text>
+                    {!!item.note && (
+                      <Text style={styles.note}>{item.note}</Text>
+                    )}
                   </View>
                   <Text style={styles.badge}>
                     {getTimeLeftLabel(item.blockedUntil)}
@@ -104,26 +142,67 @@ export function BlockedContactsScreen(): React.JSX.Element {
                   ) : (
                     <View />
                   )}
-                  <View style={styles.cardActions}>
-                    <Pressable
-                      hitSlop={8}
-                      onPress={() =>
-                        navigation.navigate('AddContact', {contactId: item.id})
-                      }>
-                      <Text style={styles.editBtnText}>Редагувати</Text>
-                    </Pressable>
-                    <Pressable
-                      hitSlop={8}
-                      onPress={() => confirmRemove(item.id, item.name)}>
-                      <Text style={styles.removeBtnText}>Видалити</Text>
-                    </Pressable>
-                  </View>
+                  <Pressable onPress={() => openDeleteTest(item.id, item.name)}>
+                    <Text style={styles.removeBtnText}>Видалити</Text>
+                  </Pressable>
                 </View>
-              </View>
+              </Pressable>
             );
           }}
         />
       )}
+
+      <Modal
+        visible={deleteTarget !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setDeleteTarget(null)}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <Pressable style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>Видалити {deleteTarget?.name}?</Text>
+            <Text style={styles.modalSub}>
+              {deleteChallenge?.type === 'math'
+                ? 'Розв\'яжи приклад щоб підтвердити 🧮'
+                : 'Напиши кожне слово навпаки — просто так не вийде 😏'}
+            </Text>
+            {deleteChallenge && (
+              <>
+                <Text style={styles.mathQuestion}>{deleteChallenge.display}</Text>
+                <TextInput
+                  style={[styles.mathInput, isDeleteCorrect && styles.mathInputCorrect]}
+                  value={deleteInput}
+                  onChangeText={setDeleteInput}
+                  placeholder={deleteChallenge.type === 'math' ? 'Відповідь...' : 'Навпаки...'}
+                  placeholderTextColor={colors.subtleText}
+                  keyboardType={deleteChallenge.type === 'math' ? 'number-pad' : 'default'}
+                  autoCapitalize={deleteChallenge.type === 'reverse' ? 'characters' : 'none'}
+                  autoCorrect={false}
+                  textAlign="center"
+                  autoFocus
+                />
+              </>
+            )}
+            <TouchableOpacity
+              style={[styles.deleteBtn, !isDeleteCorrect && styles.deleteBtnDisabled]}
+              onPress={isDeleteCorrect ? () => {
+                removeContact(deleteTarget!.id);
+                setDeleteTarget(null);
+              } : undefined}>
+              <Text style={[styles.deleteBtnText, !isDeleteCorrect && styles.deleteBtnTextDisabled]}>
+                Видалити
+              </Text>
+            </TouchableOpacity>
+            <Pressable
+              style={styles.cancelBtn}
+              onPress={() => setDeleteTarget(null)}>
+              <Text style={styles.cancelBtnText}>Ні, нехай захищає</Text>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
+
     </SafeAreaView>
   );
 }
@@ -225,6 +304,14 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  note: {
+    marginTop: 4,
+    color: colors.subtleText,
+    fontFamily: fonts.primary,
+    fontSize: 12,
+    lineHeight: 17,
+    fontStyle: 'italic',
+  },
   badge: {
     overflow: 'hidden',
     borderRadius: 999,
@@ -251,17 +338,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.primary,
     fontSize: 12,
   },
-  cardActions: {
-    flexDirection: 'row',
-    gap: 16,
-    alignItems: 'center',
-  },
-  editBtnText: {
-    color: colors.primary,
-    fontFamily: fonts.primary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
   removeBtnText: {
     color: colors.subtleText,
     fontFamily: fonts.primary,
@@ -275,7 +351,6 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyIcon: {
-    fontSize: 48,
     marginBottom: 8,
   },
   emptyTitle: {
@@ -291,5 +366,82 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 40,
+    gap: 12,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontFamily: fonts.primary,
+    fontSize: 18,
+    fontWeight: '800',
+  },
+  modalSub: {
+    color: colors.mutedText,
+    fontFamily: fonts.primary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  mathQuestion: {
+    color: colors.text,
+    fontFamily: fonts.primary,
+    fontSize: 32,
+    fontWeight: '800',
+    textAlign: 'center',
+    paddingVertical: 4,
+  },
+  mathInput: {
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingVertical: 12,
+    color: colors.text,
+    fontFamily: fonts.primary,
+    fontSize: 22,
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  mathInputCorrect: {
+    borderColor: colors.primary,
+  },
+  deleteBtn: {
+    backgroundColor: '#C62828',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  deleteBtnDisabled: {
+    backgroundColor: colors.border,
+  },
+  deleteBtnText: {
+    color: '#fff',
+    fontFamily: fonts.primary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  deleteBtnTextDisabled: {
+    color: colors.subtleText,
+  },
+  cancelBtn: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  cancelBtnText: {
+    color: colors.subtleText,
+    fontFamily: fonts.primary,
+    fontSize: 14,
   },
 });

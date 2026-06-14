@@ -8,7 +8,7 @@ import type {RootStackParamList} from '../navigation/AppNavigator';
 import {colors} from '../theme/colors';
 import {fonts} from '../theme/fonts';
 
-type Nav = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 export function WelcomeScreen(): React.JSX.Element {
   const navigation = useNavigation<Nav>();

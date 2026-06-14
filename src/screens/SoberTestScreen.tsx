@@ -20,17 +20,34 @@ import {useBlockedContacts} from '../context/ContactsContext';
 type Nav = NativeStackNavigationProp<RootStackParamList, 'SoberTest'>;
 type Route = RouteProp<RootStackParamList, 'SoberTest'>;
 
-const TARGET_PHRASE = 'Я подумаю про це вранці';
+const PHRASES = [
+  "Я подумаю про це вранці і прийму зважене спокійне рішення",
+  "Ранок — найкращий радник, особливо після бурхливого вечора",
+  "Деякі слова краще залишити при собі і сказати їх вранці",
+  "Моє майбутнє я обов'язково скаже дякую за цю паузу сьогодні",
+  "Зараз точно не найкращий момент — ранок розсудить краще за мене",
+  "Те що здається терміновим вночі, вранці завжди виглядає інакше",
+  "Я достатньо розумна щоб зачекати до ранку перед важливим кроком",
+];
+
+function getRandomPhrase(): string {
+  return PHRASES[Math.floor(Math.random() * PHRASES.length)];
+}
 
 function generateMathQuestion(): {question: string; answer: number} {
-  const a = Math.floor(Math.random() * 15) + 1;
-  const b = Math.floor(Math.random() * 15) + 1;
-  const useAdd = Math.random() > 0.4;
+  // два множення: a×b − c×d або a×b + c×d
+  let a: number, b: number, c: number, d: number;
+  do {
+    a = Math.floor(Math.random() * 6) + 4;  // 4–9
+    b = Math.floor(Math.random() * 6) + 4;  // 4–9
+    c = Math.floor(Math.random() * 5) + 2;  // 2–6
+    d = Math.floor(Math.random() * 5) + 2;  // 2–6
+  } while (a * b - c * d <= 5); // відповідь завжди > 5
+  const useAdd = Math.random() > 0.6;
   if (useAdd) {
-    return {question: `${a} + ${b} = ?`, answer: a + b};
+    return {question: `${a} × ${b} + ${c} × ${d} = ?`, answer: a * b + c * d};
   }
-  const [big, small] = a >= b ? [a, b] : [b, a];
-  return {question: `${big} - ${small} = ?`, answer: big - small};
+  return {question: `${a} × ${b} − ${c} × ${d} = ?`, answer: a * b - c * d};
 }
 
 export function SoberTestScreen(): React.JSX.Element {
@@ -39,28 +56,57 @@ export function SoberTestScreen(): React.JSX.Element {
   const {contactName, action, riskScore, contactId} = route.params;
   const {logAttempt} = useBlockedContacts();
 
-  const testType = useMemo<'phrase' | 'math'>(
-    () => (Math.random() > 0.5 ? 'phrase' : 'math'),
-    [],
-  );
+  const REVERSE_PHRASES = ['ДОБРА НІЧ', 'НЕ ДЗВОНИ', 'ЧАС СПАТИ', 'СТОП ДУМАЙ', 'НОЧІ КІНЕЦЬ'];
+
+  const testType = useMemo<'phrase' | 'math' | 'reverse'>(() => {
+    const r = Math.random();
+    if (r < 0.34) {return 'phrase';}
+    if (r < 0.67) {return 'math';}
+    return 'reverse';
+  }, []);
+
   const math = useMemo(generateMathQuestion, []);
+  const targetPhrase = useMemo(getRandomPhrase, []);
+  const reverseChallenge = useMemo(() => {
+    const phrase = REVERSE_PHRASES[Math.floor(Math.random() * REVERSE_PHRASES.length)];
+    const answer = phrase.split(' ').map(w => w.split('').reverse().join('')).join(' ');
+    return {phrase, answer};
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [input, setInput] = useState('');
   const [passed, setPassed] = useState(false);
+  const [wrongAttempts, setWrongAttempts] = useState(0);
+  const [lastWrongInput, setLastWrongInput] = useState('');
 
-  const isPhraseCorrect = input === TARGET_PHRASE;
+  const isPhraseCorrect = input === targetPhrase;
+  const isReverseCorrect = input.trim().toUpperCase() === reverseChallenge.answer;
   const isMathCorrect =
     input.trim() !== '' && parseInt(input.trim(), 10) === math.answer;
-  const canSubmit = testType === 'phrase' ? isPhraseCorrect : isMathCorrect;
+  const isMathWrong =
+    input.trim().length > 0 &&
+    !isNaN(parseInt(input.trim(), 10)) &&
+    !isMathCorrect;
+  const canSubmit =
+    testType === 'phrase' ? isPhraseCorrect :
+    testType === 'reverse' ? isReverseCorrect :
+    isMathCorrect;
 
   const errorCount = useMemo(() => {
     if (testType !== 'phrase') {return 0;}
     let errors = 0;
     for (let i = 0; i < input.length; i++) {
-      if (input[i] !== TARGET_PHRASE[i]) {errors++;}
+      if (input[i] !== targetPhrase[i]) {errors++;}
     }
     return errors;
-  }, [input, testType]);
+  }, [input, testType, targetPhrase]);
+
+  const handleMathSubmitAttempt = useCallback(() => {
+    if (isMathWrong && input !== lastWrongInput) {
+      setWrongAttempts(n => n + 1);
+      setLastWrongInput(input);
+    }
+  }, [isMathWrong, input, lastWrongInput]);
 
   const riskColor =
     riskScore >= 80
@@ -122,7 +168,7 @@ export function SoberTestScreen(): React.JSX.Element {
 
           <View style={[styles.riskBadge, {backgroundColor: riskColor + '25', borderColor: riskColor}]}>
             <Text style={[styles.riskLabel, {color: riskColor}]}>
-              Індекс імпульсу: {riskScore}/100
+              Індекс імпульсу: {Math.round(riskScore / 10)}/10
             </Text>
           </View>
         </View>
@@ -137,8 +183,8 @@ export function SoberTestScreen(): React.JSX.Element {
           <View style={styles.testCard}>
             {testType === 'phrase' ? (
               <>
-                <Text style={styles.testLabel}>Набери фразу без помилок:</Text>
-                <Text style={styles.targetPhrase}>{TARGET_PHRASE}</Text>
+                <Text style={styles.testLabel}>Введи фразу без помилок:</Text>
+                <Text style={styles.targetPhrase}>{targetPhrase}</Text>
                 <TextInput
                   style={[
                     styles.input,
@@ -151,12 +197,35 @@ export function SoberTestScreen(): React.JSX.Element {
                   placeholderTextColor={colors.subtleText}
                   autoCapitalize="none"
                   autoCorrect={false}
+                  spellCheck={false}
                 />
-                {errorCount > 0 && (
+                {errorCount > 0 ? (
                   <Text style={styles.errorHint}>
-                    {errorCount} {errorCount === 1 ? 'помилка' : 'помилок'} — спробуй ще раз
+                    {errorCount} {errorCount === 1 ? 'помилка' : errorCount < 5 ? 'помилки' : 'помилок'} — уважніше
                   </Text>
-                )}
+                ) : input.length > 0 && !isPhraseCorrect ? (
+                  <Text style={styles.progressHint}>
+                    {input.length} / {targetPhrase.length} символів
+                  </Text>
+                ) : null}
+              </>
+            ) : testType === 'reverse' ? (
+              <>
+                <Text style={styles.testLabel}>Напиши кожне слово навпаки:</Text>
+                <Text style={styles.mathQuestion}>{reverseChallenge.phrase}</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    styles.inputCenter,
+                    isReverseCorrect && styles.inputSuccess,
+                  ]}
+                  value={input}
+                  onChangeText={setInput}
+                  placeholder="Навпаки..."
+                  placeholderTextColor={colors.subtleText}
+                  autoCapitalize="characters"
+                  autoCorrect={false}
+                />
               </>
             ) : (
               <>
@@ -166,14 +235,22 @@ export function SoberTestScreen(): React.JSX.Element {
                   style={[
                     styles.input,
                     styles.inputCenter,
+                    isMathWrong && styles.inputError,
                     isMathCorrect && styles.inputSuccess,
                   ]}
                   value={input}
                   onChangeText={setInput}
+                  onEndEditing={handleMathSubmitAttempt}
                   placeholder="?"
                   placeholderTextColor={colors.subtleText}
-                  keyboardType="numeric"
+                  keyboardType="number-pad"
                 />
+                {isMathWrong && (
+                  <Text style={styles.errorHint}>
+                    Невірно
+                    {wrongAttempts >= 2 ? ` (${wrongAttempts} спроби — зосередься)` : ''}
+                  </Text>
+                )}
               </>
             )}
           </View>
@@ -293,6 +370,12 @@ const styles = StyleSheet.create({
   inputSuccess: {borderColor: colors.primary},
   errorHint: {
     color: '#E53935',
+    fontFamily: fonts.primary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  progressHint: {
+    color: colors.subtleText,
     fontFamily: fonts.primary,
     fontSize: 12,
   },

@@ -57,13 +57,13 @@ export type PartyMode = {
 
 export const PARTY_MODE_OPTIONS: {
   label: string;
+  emoji: string;
   duration: PartyModeDuration;
   description: string;
 }[] = [
-  {label: 'Я на вечірці', duration: '3h', description: 'Захист на 3 години'},
-  {label: 'До ранку без драми', duration: 'morning', description: 'До 08:00'},
-  {label: 'Не чіпати колишнього', duration: 'night', description: 'До 10:00'},
-  {label: "П'ятниця, тримай мене", duration: 'night', description: 'До 10:00'},
+  {label: 'Я на вечірці', emoji: '🎉', duration: '3h', description: 'Заблокувати на 3 години'},
+  {label: 'До ранку', emoji: '🌙', duration: 'morning', description: 'Заблокувати до 08:00'},
+  {label: "П'ятниця", emoji: '🍷', duration: 'night', description: 'Заблокувати до 10:00'},
 ];
 
 export function calcPartyModeUntil(duration: PartyModeDuration): number {
