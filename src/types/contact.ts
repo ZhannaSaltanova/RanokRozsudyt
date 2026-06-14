@@ -3,12 +3,12 @@ export type BlockDuration = 'morning' | '3days' | '7days' | 'forever' | 'custom'
 export type BlockedContact = {
   id: string;
   name: string;
-  phone?: string;
+  phones: string[]; // всі заблоковані номери
   reason: string;
-  note?: string; // крик душі — необов'язково
+  note?: string;
   duration: BlockDuration;
-  customHours?: number; // тільки для duration === 'custom'
-  blockedUntil: number | null; // timestamp або null = назавжди
+  customHours?: number;
+  blockedUntil: number | null;
   addedAt: number;
 };
 

@@ -5,6 +5,7 @@ import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   PermissionsAndroid,
   Platform,
   Pressable,
@@ -13,6 +14,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
   type ScrollView as ScrollViewType,
 } from 'react-native';
@@ -25,7 +27,7 @@ import {colors} from '../theme/colors';
 import {fonts} from '../theme/fonts';
 import {BlockDuration, DURATION_LABELS} from '../types/contact';
 import {useBlockedContacts} from '../context/ContactsContext';
-import {validatePhone} from '../utils/phoneUtils';
+import {formatPhoneDisplay, validatePhone} from '../utils/phoneUtils';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'AddContact'>;
 type Route = RouteProp<RootStackParamList, 'AddContact'>;
@@ -69,6 +71,8 @@ export function AddContactScreen(): React.JSX.Element {
   const [loadingContacts, setLoadingContacts] = useState(false);
   const [search, setSearch] = useState('');
   const [selectedContact, setSelectedContact] = useState<PhoneContact | null>(null);
+  const [selectedPhones, setSelectedPhones] = useState<string[]>([]);
+  const [phonePickerContact, setPhonePickerContact] = useState<PhoneContact | null>(null);
 
   // Form fields
   const [name, setName] = useState('');   // прізвисько
@@ -82,6 +86,7 @@ export function AddContactScreen(): React.JSX.Element {
 
   const scrollRef = useRef<ScrollViewType>(null);
   const durationSectionY = useRef(0);
+  const noteSectionY = useRef(0);
 
   const scrollToDuration = useCallback(() => {
     setTimeout(() => {
@@ -89,12 +94,19 @@ export function AddContactScreen(): React.JSX.Element {
     }, 150);
   }, []);
 
+  const scrollToNote = useCallback(() => {
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({y: noteSectionY.current, animated: true});
+    }, 300);
+  }, []);
+
   // Заповнюємо поля при редагуванні — чекаємо поки contacts завантажиться
   useEffect(() => {
     if (editingContact && !editInitialized.current) {
       editInitialized.current = true;
       setName(editingContact.name);
-      setPhone(editingContact.phone ?? '');
+      setPhone(editingContact.phones[0] ?? '');
+      setSelectedPhones(editingContact.phones);
       setReason(editingContact.reason);
       setNote(editingContact.note ?? '');
       setDuration(editingContact.duration);
@@ -109,7 +121,7 @@ export function AddContactScreen(): React.JSX.Element {
         }
       }
       setPhoneError(null);
-      setMode(editingContact.phone ? 'phonebook' : 'manual');
+      setMode(editingContact.phones.length > 0 ? 'phonebook' : 'manual');
     }
   }, [editingContact]);
 
@@ -161,7 +173,7 @@ export function AddContactScreen(): React.JSX.Element {
   // Чи є номер телефону (з книги або вже збережений)
   const hasPhone =
     isEditing
-      ? !!editingContact?.phone
+      ? (editingContact?.phones ?? []).length > 0
       : mode === 'phonebook' && !!selectedContact;
 
   const customHours =
@@ -205,7 +217,7 @@ export function AddContactScreen(): React.JSX.Element {
     if (isEditing && editingContact) {
       updateContact(editingContact.id, {
         name: finalName,
-        phone: editingContact.phone ?? (phone.trim() || undefined),
+        phones: selectedPhones.length > 0 ? selectedPhones : (phone.trim() ? [phone.trim()] : []),
         reason: reason.trim() || editingContact.reason,
         note: note.trim() || undefined,
         duration,
@@ -214,10 +226,10 @@ export function AddContactScreen(): React.JSX.Element {
     } else {
       addContact({
         name: finalName,
-        phone:
+        phones:
           mode === 'phonebook'
-            ? selectedContact?.phoneNumbers[0]?.number
-            : phone.trim() || undefined,
+            ? selectedPhones
+            : phone.trim() ? [phone.trim()] : [],
         reason: reason.trim() || REASON_SUGGESTIONS[0],
         note: note.trim() || undefined,
         duration,
@@ -282,7 +294,15 @@ export function AddContactScreen(): React.JSX.Element {
             renderItem={({item}) => (
               <Pressable
                 style={styles.contactRow}
-                onPress={() => setSelectedContact(item)}>
+                onPress={() => {
+                  if (item.phoneNumbers.length > 1) {
+                    setSelectedPhones([]);
+                    setPhonePickerContact(item);
+                  } else {
+                    setSelectedPhones(item.phoneNumbers.map(p => p.number));
+                    setSelectedContact(item);
+                  }
+                }}>
                 <View style={styles.contactAvatar}>
                   <Text style={styles.contactAvatarText}>
                     {item.displayName[0]?.toUpperCase()}
@@ -292,12 +312,73 @@ export function AddContactScreen(): React.JSX.Element {
                   <Text style={styles.contactName}>{item.displayName}</Text>
                   <Text style={styles.contactPhone}>
                     {item.phoneNumbers[0]?.number}
+                    {item.phoneNumbers.length > 1 ? ` +${item.phoneNumbers.length - 1} ще` : ''}
                   </Text>
                 </View>
               </Pressable>
             )}
           />
         )}
+
+        {/* Вибір номерів якщо кілька */}
+        <Modal
+          visible={phonePickerContact !== null}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setPhonePickerContact(null)}>
+          <Pressable
+            style={styles.modalOverlay}
+            onPress={() => setPhonePickerContact(null)}>
+            <Pressable style={styles.modalSheet}>
+              <Text style={styles.modalTitle}>
+                {phonePickerContact?.displayName}
+              </Text>
+              <Text style={styles.modalSub}>Вибери які номери блокувати</Text>
+              {phonePickerContact?.phoneNumbers.map((p, i) => {
+                const isChecked = selectedPhones.includes(p.number);
+                return (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.phoneOption}
+                    onPress={() => {
+                      setSelectedPhones(prev =>
+                        isChecked
+                          ? prev.filter(n => n !== p.number)
+                          : [...prev, p.number],
+                      );
+                    }}>
+                    <Text style={styles.phoneOptionNumber}>{p.number}</Text>
+                    <Text style={isChecked ? styles.checkOn : styles.checkOff}>
+                      {isChecked ? '✓' : '○'}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity
+                style={[
+                  styles.confirmPhoneBtn,
+                  selectedPhones.length === 0 && styles.confirmPhoneBtnDisabled,
+                ]}
+                onPress={() => {
+                  if (selectedPhones.length === 0) {return;}
+                  setSelectedContact(phonePickerContact);
+                  setPhonePickerContact(null);
+                }}>
+                <Text style={styles.confirmPhoneBtnText}>
+                  Заблокувати {selectedPhones.length === 1
+                    ? '1 номер'
+                    : `всі ${selectedPhones.length} номери`}
+                </Text>
+              </TouchableOpacity>
+              <Pressable
+                style={styles.modalCancel}
+                onPress={() => setPhonePickerContact(null)}>
+                <Text style={styles.modalCancelText}>Скасувати</Text>
+              </Pressable>
+            </Pressable>
+          </Pressable>
+        </Modal>
+
       </SafeAreaView>
     );
   }
@@ -345,12 +426,14 @@ export function AddContactScreen(): React.JSX.Element {
           </View>
         )}
 
-        {/* Номер (тільки редагування з наявним номером — показуємо як read-only) */}
-        {isEditing && editingContact?.phone && (
+        {/* Номери (тільки редагування — показуємо як read-only) */}
+        {isEditing && (editingContact?.phones ?? []).length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.label}>Номер телефону</Text>
+            <Text style={styles.label}>Номери телефону</Text>
             <View style={styles.phoneReadOnly}>
-              <Text style={styles.phoneReadOnlyText}>{editingContact.phone}</Text>
+              <Text style={styles.phoneReadOnlyText}>
+                {editingContact!.phones.map(formatPhoneDisplay).join('\n')}
+              </Text>
             </View>
           </View>
         )}
@@ -492,7 +575,11 @@ export function AddContactScreen(): React.JSX.Element {
         </View>
 
         {/* Крик душі */}
-        <View style={styles.section}>
+        <View
+          style={styles.section}
+          onLayout={e => {
+            noteSectionY.current = e.nativeEvent.layout.y;
+          }}>
           <Text style={styles.label}>Крик душі 🫀</Text>
           <Text style={styles.labelHint}>Необов'язково. Тільки для тебе.</Text>
           <TextInput
@@ -501,6 +588,7 @@ export function AddContactScreen(): React.JSX.Element {
             placeholderTextColor={colors.subtleText}
             value={note}
             onChangeText={setNote}
+            onFocus={scrollToNote}
             multiline
             numberOfLines={4}
             textAlignVertical="top"
@@ -533,7 +621,7 @@ const styles = StyleSheet.create({
   formScroll: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 40,
+    paddingBottom: 320,
     gap: 24,
   },
   title: {
@@ -791,5 +879,82 @@ const styles = StyleSheet.create({
   noteInput: {
     minHeight: 100,
     paddingTop: 14,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 40,
+    gap: 4,
+  },
+  modalTitle: {
+    color: colors.text,
+    fontFamily: fonts.primary,
+    fontSize: 18,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  modalSub: {
+    color: colors.mutedText,
+    fontFamily: fonts.primary,
+    fontSize: 14,
+    marginBottom: 8,
+  },
+  phoneOption: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  phoneOptionNumber: {
+    color: colors.text,
+    fontFamily: fonts.primary,
+    fontSize: 16,
+    fontWeight: '600',
+    flex: 1,
+  },
+  checkOn: {
+    color: colors.primary,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  checkOff: {
+    color: colors.border,
+    fontSize: 20,
+  },
+  confirmPhoneBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  confirmPhoneBtnDisabled: {
+    backgroundColor: colors.border,
+  },
+  confirmPhoneBtnText: {
+    color: colors.onPrimary,
+    fontFamily: fonts.primary,
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  modalCancel: {
+    marginTop: 8,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  modalCancelText: {
+    color: colors.subtleText,
+    fontFamily: fonts.primary,
+    fontSize: 14,
   },
 });
