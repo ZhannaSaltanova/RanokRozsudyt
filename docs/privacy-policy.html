@@ -6,14 +6,15 @@
   <title>Політика конфіденційності — Ранок Розсудить</title>
   <style>
     :root {
-      --bg:        #101114;
-      --surface:   #1a1d22;
-      --border:    #2a2d33;
+      --bg:        #0d0f12;
+      --surface:   #161920;
+      --border:    #252830;
       --green:     #177A0D;
-      --green-dim: #1a8f0e22;
-      --text:      #e8eaf0;
-      --muted:     #8a8fa0;
-      --radius:    12px;
+      --green-dim: #177a0d18;
+      --green-text:#1fa010;
+      --text:      #e4e6f0;
+      --muted:     #7a7f90;
+      --radius:    10px;
     }
 
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -22,88 +23,69 @@
       background: var(--bg);
       color: var(--text);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      font-size: 16px;
-      line-height: 1.7;
-      padding: 24px 16px 64px;
+      font-size: 15.5px;
+      line-height: 1.75;
+      padding: 24px 16px 80px;
     }
 
     .wrapper {
-      max-width: 720px;
+      max-width: 700px;
       margin: 0 auto;
     }
 
     header {
-      text-align: center;
-      padding: 48px 0 40px;
+      padding: 56px 0 48px;
       border-bottom: 1px solid var(--border);
-      margin-bottom: 40px;
+      margin-bottom: 44px;
     }
 
-    .logo-mark {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 64px;
-      height: 64px;
-      background: var(--green-dim);
-      border: 1.5px solid var(--green);
-      border-radius: 16px;
-      font-size: 28px;
-      margin-bottom: 20px;
+    .app-label {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--green-text);
+      margin-bottom: 16px;
     }
 
     h1 {
-      font-size: 26px;
+      font-size: 30px;
       font-weight: 700;
       color: var(--text);
-      margin-bottom: 8px;
-    }
-
-    .subtitle {
-      color: var(--muted);
-      font-size: 14px;
+      letter-spacing: -0.02em;
+      margin-bottom: 12px;
+      line-height: 1.2;
     }
 
     .updated {
       display: inline-block;
-      margin-top: 12px;
-      padding: 4px 12px;
-      background: var(--green-dim);
-      border: 1px solid var(--green);
-      border-radius: 20px;
+      margin-top: 4px;
       font-size: 13px;
-      color: var(--green);
+      color: var(--muted);
     }
 
     section {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px;
-      margin-bottom: 16px;
+      border-left: 2px solid var(--border);
+      padding: 0 0 0 24px;
+      margin-bottom: 40px;
+      transition: border-color 0.2s;
     }
 
     section:hover {
-      border-color: #3a3d44;
+      border-left-color: var(--green);
     }
 
     h2 {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 600;
       color: var(--text);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    h2 .icon {
-      font-size: 20px;
-      flex-shrink: 0;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
     }
 
     p {
-      color: #c8cad4;
+      color: #b0b4c4;
       margin-bottom: 10px;
     }
 
@@ -112,12 +94,12 @@
     ul {
       list-style: none;
       padding: 0;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     ul li {
-      color: #c8cad4;
-      padding: 6px 0 6px 20px;
+      color: #b0b4c4;
+      padding: 5px 0 5px 18px;
       position: relative;
     }
 
@@ -125,29 +107,34 @@
       content: '';
       position: absolute;
       left: 0;
-      top: 15px;
-      width: 6px;
-      height: 6px;
+      top: 14px;
+      width: 5px;
+      height: 5px;
       background: var(--green);
       border-radius: 50%;
     }
 
+    strong {
+      color: #d4d7e4;
+      font-weight: 600;
+    }
+
     .highlight {
       background: var(--green-dim);
-      border: 1px solid var(--green);
-      border-radius: 8px;
+      border: 1px solid #177a0d30;
+      border-radius: var(--radius);
       padding: 14px 18px;
       margin-top: 14px;
-      color: #c8cad4;
+      color: #b0b4c4;
       font-size: 14px;
     }
 
     .highlight strong {
-      color: var(--green);
+      color: var(--green-text);
     }
 
     a {
-      color: var(--green);
+      color: var(--green-text);
       text-decoration: none;
     }
 
@@ -155,18 +142,22 @@
       text-decoration: underline;
     }
 
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 48px 0;
+    }
+
     footer {
-      text-align: center;
-      padding-top: 40px;
       color: var(--muted);
       font-size: 13px;
     }
 
-    footer p { color: var(--muted); }
+    footer p { color: var(--muted); margin-bottom: 4px; }
 
     @media (max-width: 480px) {
-      section { padding: 20px 16px; }
-      h1 { font-size: 22px; }
+      h1 { font-size: 24px; }
+      section { padding-left: 18px; }
     }
   </style>
 </head>
@@ -174,14 +165,13 @@
   <div class="wrapper">
 
     <header>
-      <div class="logo-mark">🌅</div>
+      <span class="app-label">Ранок Розсудить</span>
       <h1>Політика конфіденційності</h1>
-      <p class="subtitle">Ранок Розсудить</p>
       <span class="updated">Оновлено: 24 червня 2026 р.</span>
     </header>
 
     <section>
-      <h2><span class="icon">📋</span>Загальні відомості</h2>
+      <h2>Загальні відомості</h2>
       <p>
         Ця Політика конфіденційності пояснює, як додаток <strong>«Ранок Розсудить»</strong>
         (далі — «Додаток») збирає, використовує та захищає вашу інформацію.
@@ -192,7 +182,7 @@
     </section>
 
     <section>
-      <h2><span class="icon">📱</span>Які дані ми збираємо</h2>
+      <h2>Які дані ми збираємо</h2>
       <p>Додаток працює <strong>виключно на вашому пристрої</strong> і не надсилає жодних даних на зовнішні сервери. Ми збираємо мінімум необхідної інформації:</p>
       <ul>
         <li>Імена та номери телефонів контактів, яких ви додаєте до списку захисту — лише ті, які ви обираєте самостійно</li>
@@ -201,12 +191,12 @@
         <li>Анонімні лічильники спроб контакту (зберігаються локально для аналізу імпульсу)</li>
       </ul>
       <div class="highlight">
-        <strong>Важливо:</strong> Усі ці дані зберігаються лише на вашому пристрої у локальному сховищі (AsyncStorage / SharedPreferences). Ми не маємо до них доступу.
+        <strong>Важливо:</strong> Усі ці дані зберігаються лише на вашому пристрої у локальному сховищі. Ми не маємо до них доступу.
       </div>
     </section>
 
     <section>
-      <h2><span class="icon">🎯</span>Як ми використовуємо дані</h2>
+      <h2>Як ми використовуємо дані</h2>
       <p>Зібрані дані використовуються виключно для роботи функцій Додатку:</p>
       <ul>
         <li>Блокування вихідних дзвінків до контактів зі списку захисту</li>
@@ -217,7 +207,7 @@
     </section>
 
     <section>
-      <h2><span class="icon">🔐</span>Дозволи Android</h2>
+      <h2>Дозволи Android</h2>
       <p>Для роботи Додатку потрібні такі дозволи:</p>
       <ul>
         <li>
@@ -227,7 +217,7 @@
           <strong>Перенаправлення дзвінків (BIND_CALL_REDIRECTION_SERVICE)</strong> — системний дозвіл, який дозволяє Додатку перехоплювати та блокувати вихідні дзвінки до захищених контактів.
         </li>
         <li>
-          <strong>Завершення дзвінків (ANSWER_PHONE_CALLS)</strong> — використовується разом із Сервісом доступності для блокування вхідних дзвінків (преміум-функція).
+          <strong>Завершення дзвінків (ANSWER_PHONE_CALLS)</strong> — використовується разом із Сервісом доступності для блокування вхідних дзвінків.
         </li>
         <li>
           <strong>Сервіс доступності (Accessibility Service)</strong> — дозволяє Додатку відстежувати активний дзвінок та завершувати його, якщо номер є у списку захисту. Сервіс відслідковує лише події виклику і не читає текст з екрану чи інші елементи інтерфейсу.
@@ -236,7 +226,7 @@
     </section>
 
     <section>
-      <h2><span class="icon">🚫</span>Чого ми не робимо</h2>
+      <h2>Чого ми не робимо</h2>
       <ul>
         <li>Не надсилаємо ваші дані на сервери або третім особам</li>
         <li>Не використовуємо аналітику, рекламні SDK або трекери</li>
@@ -247,7 +237,7 @@
     </section>
 
     <section>
-      <h2><span class="icon">🗑️</span>Видалення даних</h2>
+      <h2>Видалення даних</h2>
       <p>
         Щоб видалити всі дані Додатку — просто видаліть його з пристрою.
         Усі збережені контакти, налаштування та логи буде повністю знищено разом з Додатком.
@@ -259,7 +249,7 @@
     </section>
 
     <section>
-      <h2><span class="icon">👶</span>Діти</h2>
+      <h2>Вікові обмеження</h2>
       <p>
         Додаток призначений для осіб <strong>віком від 18 років</strong>.
         Ми свідомо не збираємо інформацію від дітей. Якщо вам стало відомо,
@@ -268,7 +258,7 @@
     </section>
 
     <section>
-      <h2><span class="icon">📝</span>Зміни до Політики</h2>
+      <h2>Зміни до Політики</h2>
       <p>
         Ми можемо час від часу оновлювати цю Політику конфіденційності.
         Про суттєві зміни ми повідомимо через оновлення в Google Play.
@@ -277,16 +267,18 @@
     </section>
 
     <section>
-      <h2><span class="icon">✉️</span>Контакти</h2>
+      <h2>Контакти</h2>
       <p>Якщо у вас є питання щодо конфіденційності — пишіть:</p>
       <p>
         <a href="mailto:saltanovazhanna.dev@gmail.com">saltanovazhanna.dev@gmail.com</a>
       </p>
     </section>
 
+    <hr class="divider" />
+
     <footer>
       <p>© 2026 Ранок Розсудить. Всі права захищені.</p>
-      <p style="margin-top: 6px;">Зроблено в Україні 🇺🇦</p>
+      <p>Зроблено в Україні</p>
     </footer>
 
   </div>

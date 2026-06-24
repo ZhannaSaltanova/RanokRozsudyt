@@ -56,7 +56,14 @@ export function SoberTestScreen(): React.JSX.Element {
   const {contactName, action, riskScore, contactId} = route.params;
   const {logAttempt} = useBlockedContacts();
 
-  const REVERSE_PHRASES = ['ДОБРА НІЧ', 'НЕ ДЗВОНИ', 'ЧАС СПАТИ', 'СТОП ДУМАЙ', 'НОЧІ КІНЕЦЬ'];
+  const REVERSE_PHRASES = [
+    'пауза зараз і назавжди',
+    'не дзвони йому сьогодні',
+    'час лягати спати зараз',
+    'добра ніч і крапка',
+    'ранок розсудить краще тебе',
+    'стоп думай двічі потім дзвони',
+  ];
 
   const testType = useMemo<'phrase' | 'math' | 'reverse'>(() => {
     const r = Math.random();
@@ -80,7 +87,7 @@ export function SoberTestScreen(): React.JSX.Element {
   const [lastWrongInput, setLastWrongInput] = useState('');
 
   const isPhraseCorrect = input === targetPhrase;
-  const isReverseCorrect = input.trim().toUpperCase() === reverseChallenge.answer;
+  const isReverseCorrect = input.trim().toLowerCase() === reverseChallenge.answer;
   const isMathCorrect =
     input.trim() !== '' && parseInt(input.trim(), 10) === math.answer;
   const isMathWrong =
@@ -211,7 +218,7 @@ export function SoberTestScreen(): React.JSX.Element {
               </>
             ) : testType === 'reverse' ? (
               <>
-                <Text style={styles.testLabel}>Напиши кожне слово навпаки:</Text>
+                <Text style={styles.testLabel}>Напиши кожне слово навпаки — подивимось, чи ти готова</Text>
                 <Text style={styles.mathQuestion}>{reverseChallenge.phrase}</Text>
                 <TextInput
                   style={[
@@ -223,7 +230,7 @@ export function SoberTestScreen(): React.JSX.Element {
                   onChangeText={setInput}
                   placeholder="Навпаки..."
                   placeholderTextColor={colors.subtleText}
-                  autoCapitalize="characters"
+                  autoCapitalize="none"
                   autoCorrect={false}
                 />
               </>
