@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Політика конфіденційності — Ранок Розсудить</title>
+  <style>
+    :root {
+      --bg:        #101114;
+      --surface:   #1a1d22;
+      --border:    #2a2d33;
+      --green:     #177A0D;
+      --green-dim: #1a8f0e22;
+      --text:      #e8eaf0;
+      --muted:     #8a8fa0;
+      --radius:    12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      padding: 24px 16px 64px;
+    }
+
+    .wrapper {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 48px 0 40px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 40px;
+    }
+
+    .logo-mark {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      height: 64px;
+      background: var(--green-dim);
+      border: 1.5px solid var(--green);
+      border-radius: 16px;
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .updated {
+      display: inline-block;
+      margin-top: 12px;
+      padding: 4px 12px;
+      background: var(--green-dim);
+      border: 1px solid var(--green);
+      border-radius: 20px;
+      font-size: 13px;
+      color: var(--green);
+    }
+
+    section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      margin-bottom: 16px;
+    }
+
+    section:hover {
+      border-color: #3a3d44;
+    }
+
+    h2 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2 .icon {
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    p {
+      color: #c8cad4;
+      margin-bottom: 10px;
+    }
+
+    p:last-child { margin-bottom: 0; }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 8px;
+    }
+
+    ul li {
+      color: #c8cad4;
+      padding: 6px 0 6px 20px;
+      position: relative;
+    }
+
+    ul li::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 15px;
+      width: 6px;
+      height: 6px;
+      background: var(--green);
+      border-radius: 50%;
+    }
+
+    .highlight {
+      background: var(--green-dim);
+      border: 1px solid var(--green);
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin-top: 14px;
+      color: #c8cad4;
+      font-size: 14px;
+    }
+
+    .highlight strong {
+      color: var(--green);
+    }
+
+    a {
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    a:hover {
+      text-decoration: underline;
+    }
+
+    footer {
+      text-align: center;
+      padding-top: 40px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    footer p { color: var(--muted); }
+
+    @media (max-width: 480px) {
+      section { padding: 20px 16px; }
+      h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <header>
+      <div class="logo-mark">🌅</div>
+      <h1>Політика конфіденційності</h1>
+      <p class="subtitle">Ранок Розсудить</p>
+      <span class="updated">Оновлено: 24 червня 2026 р.</span>
+    </header>
+
+    <section>
+      <h2><span class="icon">📋</span>Загальні відомості</h2>
+      <p>
+        Ця Політика конфіденційності пояснює, як додаток <strong>«Ранок Розсудить»</strong>
+        (далі — «Додаток») збирає, використовує та захищає вашу інформацію.
+      </p>
+      <p>
+        Використовуючи Додаток, ви погоджуєтесь з умовами цієї Політики.
+      </p>
+    </section>
+
+    <section>
+      <h2><span class="icon">📱</span>Які дані ми збираємо</h2>
+      <p>Додаток працює <strong>виключно на вашому пристрої</strong> і не надсилає жодних даних на зовнішні сервери. Ми збираємо мінімум необхідної інформації:</p>
+      <ul>
+        <li>Імена та номери телефонів контактів, яких ви додаєте до списку захисту — лише ті, які ви обираєте самостійно</li>
+        <li>Нотатки до контактів («Крик душі»), які ви вводите вручну</li>
+        <li>Стан захисту (увімкнено / вимкнено) та час його активації</li>
+        <li>Анонімні лічильники спроб контакту (зберігаються локально для аналізу імпульсу)</li>
+      </ul>
+      <div class="highlight">
+        <strong>Важливо:</strong> Усі ці дані зберігаються лише на вашому пристрої у локальному сховищі (AsyncStorage / SharedPreferences). Ми не маємо до них доступу.
+      </div>
+    </section>
+
+    <section>
+      <h2><span class="icon">🎯</span>Як ми використовуємо дані</h2>
+      <p>Зібрані дані використовуються виключно для роботи функцій Додатку:</p>
+      <ul>
+        <li>Блокування вихідних дзвінків до контактів зі списку захисту</li>
+        <li>Розрахунок «Індексу імпульсу» — оцінки ризику незапланованого контакту</li>
+        <li>Відображення щоденних передбачень і стану захисту</li>
+        <li>Тест тверезості перед дозволом на контакт</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="icon">🔐</span>Дозволи Android</h2>
+      <p>Для роботи Додатку потрібні такі дозволи:</p>
+      <ul>
+        <li>
+          <strong>Читання контактів (READ_CONTACTS)</strong> — дозволяє обирати контакти з телефонної книги для додавання до списку захисту. Додаток читає лише обрані вами контакти.
+        </li>
+        <li>
+          <strong>Перенаправлення дзвінків (BIND_CALL_REDIRECTION_SERVICE)</strong> — системний дозвіл, який дозволяє Додатку перехоплювати та блокувати вихідні дзвінки до захищених контактів.
+        </li>
+        <li>
+          <strong>Завершення дзвінків (ANSWER_PHONE_CALLS)</strong> — використовується разом із Сервісом доступності для блокування вхідних дзвінків (преміум-функція).
+        </li>
+        <li>
+          <strong>Сервіс доступності (Accessibility Service)</strong> — дозволяє Додатку відстежувати активний дзвінок та завершувати його, якщо номер є у списку захисту. Сервіс відслідковує лише події виклику і не читає текст з екрану чи інші елементи інтерфейсу.
+        </li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="icon">🚫</span>Чого ми не робимо</h2>
+      <ul>
+        <li>Не надсилаємо ваші дані на сервери або третім особам</li>
+        <li>Не використовуємо аналітику, рекламні SDK або трекери</li>
+        <li>Не отримуємо доступ до SMS, повідомлень, камери чи мікрофону</li>
+        <li>Не зберігаємо дані в хмарі</li>
+        <li>Не передаємо інформацію між пристроями</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2><span class="icon">🗑️</span>Видалення даних</h2>
+      <p>
+        Щоб видалити всі дані Додатку — просто видаліть його з пристрою.
+        Усі збережені контакти, налаштування та логи буде повністю знищено разом з Додатком.
+      </p>
+      <p>
+        Ви також можете очистити дані в будь-який момент через:
+        <strong>Налаштування → Додатки → Ранок Розсудить → Очистити дані</strong>.
+      </p>
+    </section>
+
+    <section>
+      <h2><span class="icon">👶</span>Діти</h2>
+      <p>
+        Додаток призначений для осіб <strong>віком від 18 років</strong>.
+        Ми свідомо не збираємо інформацію від дітей. Якщо вам стало відомо,
+        що дитина використовує Додаток, будь ласка, зв'яжіться з нами.
+      </p>
+    </section>
+
+    <section>
+      <h2><span class="icon">📝</span>Зміни до Політики</h2>
+      <p>
+        Ми можемо час від часу оновлювати цю Політику конфіденційності.
+        Про суттєві зміни ми повідомимо через оновлення в Google Play.
+        Дата останнього оновлення завжди вказана вгорі сторінки.
+      </p>
+    </section>
+
+    <section>
+      <h2><span class="icon">✉️</span>Контакти</h2>
+      <p>Якщо у вас є питання щодо конфіденційності — пишіть:</p>
+      <p>
+        <a href="mailto:nedikovazhanna@gmail.com">nedikovazhanna@gmail.com</a>
+      </p>
+    </section>
+
+    <footer>
+      <p>© 2026 Ранок Розсудить. Всі права захищені.</p>
+      <p style="margin-top: 6px;">Зроблено в Україні 🇺🇦</p>
+    </footer>
+
+  </div>
+</body>
+</html>
