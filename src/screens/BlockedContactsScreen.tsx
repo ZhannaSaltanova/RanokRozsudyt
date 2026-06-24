@@ -39,7 +39,14 @@ export function BlockedContactsScreen(): React.JSX.Element {
   const [deleteInput, setDeleteInput] = useState('');
 
   const openDeleteTest = useCallback((id: string, name: string) => {
-    const phrases = ['ДОБРА НІЧ', 'НЕ ДЗВОНИ', 'ЧАС СПАТИ', 'СТОП ДУМАЙ', 'НОЧІ КІНЕЦЬ', 'ПАУЗА ЗАРАЗ'];
+    const phrases = [
+      'пауза зараз і назавжди',
+      'не дзвони йому сьогодні',
+      'час лягати спати зараз',
+      'добра ніч і крапка',
+      'ранок розсудить краще тебе',
+      'стоп думай двічі потім дзвони',
+    ];
     let challenge: DeleteChallenge;
     if (Math.random() > 0.5) {
       const phrase = phrases[Math.floor(Math.random() * phrases.length)];
@@ -65,7 +72,7 @@ export function BlockedContactsScreen(): React.JSX.Element {
 
   const isDeleteCorrect = deleteChallenge !== null && (
     deleteChallenge.type === 'reverse'
-      ? deleteInput.trim().toUpperCase() === deleteChallenge.answer
+      ? deleteInput.trim().toLowerCase() === deleteChallenge.answer
       : deleteInput.trim() !== '' && parseInt(deleteInput.trim(), 10) === deleteChallenge.answer
   );
 
@@ -165,7 +172,7 @@ export function BlockedContactsScreen(): React.JSX.Element {
             <Text style={styles.modalSub}>
               {deleteChallenge?.type === 'math'
                 ? 'Розв\'яжи приклад щоб підтвердити 🧮'
-                : 'Напиши кожне слово навпаки — просто так не вийде 😏'}
+                : 'Напиши кожне слово навпаки — подивимось, чи ти готова'}
             </Text>
             {deleteChallenge && (
               <>
@@ -177,7 +184,7 @@ export function BlockedContactsScreen(): React.JSX.Element {
                   placeholder={deleteChallenge.type === 'math' ? 'Відповідь...' : 'Навпаки...'}
                   placeholderTextColor={colors.subtleText}
                   keyboardType={deleteChallenge.type === 'math' ? 'number-pad' : 'default'}
-                  autoCapitalize={deleteChallenge.type === 'reverse' ? 'characters' : 'none'}
+                  autoCapitalize="none"
                   autoCorrect={false}
                   textAlign="center"
                   autoFocus

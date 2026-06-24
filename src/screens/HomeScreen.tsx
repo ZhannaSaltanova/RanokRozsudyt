@@ -16,7 +16,14 @@ import {getGreeting} from '../utils/greeting';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-const UNLOCK_PHRASES = ['ДОБРА НІЧ', 'НЕ ДЗВОНИ', 'ЧАС СПАТИ', 'СТОП ДУМАЙ', 'НОЧІ КІНЕЦЬ', 'ПАУЗА ЗАРАЗ'];
+const UNLOCK_PHRASES = [
+  'пауза зараз і назавжди',
+  'не дзвони йому сьогодні',
+  'час лягати спати зараз',
+  'добра ніч і крапка',
+  'ранок розсудить краще тебе',
+  'стоп думай двічі потім дзвони',
+];
 
 type UnlockChallenge =
   | {type: 'reverse'; display: string; answer: string}
@@ -74,7 +81,7 @@ export function HomeScreen(): React.JSX.Element {
 
   const isUnlockCorrect = unlockChallenge !== null && (
     unlockChallenge.type === 'reverse'
-      ? unlockInput.trim().toUpperCase() === unlockChallenge.answer
+      ? unlockInput.trim().toLowerCase() === unlockChallenge.answer
       : unlockInput.trim() !== '' && parseInt(unlockInput.trim(), 10) === unlockChallenge.answer
   );
 
@@ -85,7 +92,7 @@ export function HomeScreen(): React.JSX.Element {
       if (t.getTime() > Date.now()) {t.setDate(t.getDate() - 1);}
       return t.getTime();
     })();
-    const recent = attempts.filter(a => a.result === 'blocked' && a.timestamp > nightStart);
+    const recent = attempts.filter(a => a.timestamp > nightStart);
     const map = new Map<string, {name: string; count: number}>();
     for (const a of recent) {
       const key = a.contactName.trim().toLowerCase();
@@ -249,7 +256,7 @@ export function HomeScreen(): React.JSX.Element {
             <Text style={styles.confirmText}>
               {unlockChallenge?.type === 'math'
                 ? 'Розв\'яжи приклад 🧮'
-                : 'Напиши кожне слово навпаки 😏'}
+                : 'Напиши кожне слово навпаки — подивимось, чи ти готова'}
             </Text>
             {unlockChallenge && (
               <>
@@ -261,7 +268,7 @@ export function HomeScreen(): React.JSX.Element {
                   placeholder={unlockChallenge.type === 'math' ? 'Відповідь...' : 'Навпаки...'}
                   placeholderTextColor={colors.subtleText}
                   keyboardType={unlockChallenge.type === 'math' ? 'number-pad' : 'default'}
-                  autoCapitalize={unlockChallenge.type === 'reverse' ? 'characters' : 'none'}
+                  autoCapitalize="none"
                   autoCorrect={false}
                   textAlign="center"
                   autoFocus
