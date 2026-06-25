@@ -1,4 +1,3 @@
 <resources>
     <string name="app_name">Ранок Розсудить</string>
-    <string name="accessibility_service_description">Ранок Розсудить відстежує вихідні дзвінки і блокує дзвінки до контактів зі списку захисту.</string>
 </resources>
